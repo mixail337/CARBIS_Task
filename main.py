@@ -4,11 +4,6 @@ from dadata import Dadata
 
 # Класс, который реализует приложение
 class MainApp:
-    secret = ""
-    token = ""
-    language = ""
-    url = ""
-
     # Функция для создания локальной базы данных на движке sqlite3
     def db_set(self):
         conn = sqlite3.connect('settings.db')
@@ -39,13 +34,17 @@ class MainApp:
     def db_get(self):
         conn = sqlite3.connect('settings.db')
         cur = conn.cursor()
-        cur.execute("SELECT api_key,base_url,lang,secret FROM settings")
-        tok = cur.fetchall()
-        self.token = tok[0][0]
-        self.url = tok[0][1]
-        self.language = tok[0][2]
-        self.secret = tok[0][3]
-        conn.close()
+        try:
+            cur.execute("SELECT api_key,base_url,lang,secret FROM settings")
+            tok = cur.fetchall()
+            token = tok[0][0]
+            url = tok[0][1]
+            language = tok[0][2]
+            secret = tok[0][3]
+            conn.close()
+            return token ,url, language, secret
+        except Exception as e:
+            print(e)
 
     # Функция, реализующая интерфейс приложения
     def ui(self):
@@ -62,16 +61,16 @@ class MainApp:
 
     # Функция работы API Dadata для поиска координат адреса
     def state1(self):
-        self.db_get()
+        data = self.db_get()
         # Подключение API Dadata
-        dadata = Dadata(token=self.token, secret=self.secret)
-        dadata.api_url = self.url
+        dadata = Dadata(token=data[0], secret=data[3])
+        dadata.api_url = data[1]
         while True:
             print("Введите искомый адрес (например Новосибирск Ленина 6):")
             addr = input()
             try:
                 # Использование подсказок из API Dadata для вывода вариантов поиска
-                res = dadata.suggest("address", addr, 20, language=self.language)
+                res = dadata.suggest("address", addr, 20, language=data[2])
                 lst = []
                 for r in res:
                     lst.append(r['value'])
